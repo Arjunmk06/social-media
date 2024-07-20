@@ -3,40 +3,40 @@ import User from "../models/user"
 import bcrypt from "bcryptjs"
 
 export class UserService {
-    public static async registerRoutes(app: Express){
-        app.get("/users",async(req: any,res: any,next: any)=>{
+    public static async registerRoutes(app: Express) {
+        app.get("/users", async (req: any, res: any, next: any) => {
             let users
-            try{
+            try {
                 users = await User.find()
-                if(!users){
+                if (!users) {
                     res.status(404)
                     return res.send({
-                        error:true,
-                        response:"no user found",
+                        error: true,
+                        response: "no user found",
                     })
                 }
                 return res.send({
                     error: false,
                     response: users
                 })
-            }catch(err){
+            } catch (err) {
                 console.log("err", err)
-                return res.send({error:true, response:err})
-        }
+                return res.send({ error: true, response: err })
+            }
         })
 
-        app.post("/signup", async(req,res,next)=>{
+        app.post("/signup", async (req, res, next) => {
             let userExist
-            try{
+            try {
                 const body = req.body
                 console.log(body)
                 let email = body.email
                 userExist = await User.findOne({ email })
 
-                if(userExist){
+                if (userExist) {
                     console.log("user already exist with email id")
                     res.status(400)
-                    return  res.send({
+                    return res.send({
                         error: true,
                         response: "User alreay exist with the email, Pls Login instead"
                     })
@@ -47,10 +47,10 @@ export class UserService {
                     email: body.email,
                     password: hashedPassword
                 })
-                try{
+                try {
                     await user.save()
                     console.log("user", user)
-                }catch(err){
+                } catch (err) {
                     console.log("error while signup", err)
                     return res.send({
                         error: true,
@@ -59,15 +59,62 @@ export class UserService {
                 }
                 res.status(201)
                 return res.send({
-                    error:false,
+                    error: false,
                     response: user
                 })
-            }catch(err){
+            } catch (err) {
                 console.log("err from signup", err)
                 return res.send({
-                    error: true, 
+                    error: true,
                     reponse: err
                 })
+            }
+        })
+
+        app.post("/login", async (req, res, next) => {
+            try {
+
+                const body = req.body
+
+                const email = body.email
+                const password = body.password
+
+                let existingUser = await User.findOne({email})
+                console.log(existingUser)
+
+                if (!existingUser) {
+                    console.log("No user found on this email, Please Signup")
+                    res.status(404)
+                    return res.send({
+                        error: true,
+                        response: "No user found on this email, Please Signup"
+                    })
+                }
+
+                let ifPasswordCorrect = bcrypt.compareSync(password, existingUser.password)
+
+                if (!ifPasswordCorrect) {
+                    console.log("Incorrect password/email")
+                    res.status(401)
+                    return res.send({
+                        error: true,
+                        response: "Incorrect password/email"
+                    })
+                }
+
+                res.status(200)
+                return res.send({
+                    error: false,
+                    response: "Login sucessfully"
+                })
+
+            } catch (err) {
+                console.log(err)
+                return res.send({
+                    error:true,
+                    response:err
+                })
+
             }
         })
     }
