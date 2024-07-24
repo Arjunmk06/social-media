@@ -11,12 +11,9 @@ const postSchema = new Schema({
         type: String,
         required: true
     },
-    postId: {
-        type: String,
-        required: true
-    },
     user: {
-        type: String,
+        type: mongoose.Types.ObjectId,
+        ref: "User",
         required: true
     }
 })

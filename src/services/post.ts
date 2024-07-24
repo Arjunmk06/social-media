@@ -1,6 +1,8 @@
 import Post from "../models/post"
 import { v4 as uuidv4 } from "uuid"
 import { Express } from "express-serve-static-core"
+import mongoose from "mongoose"
+import User from "../models/user"
 
 
 export class PostServices {
@@ -36,16 +38,28 @@ export class PostServices {
         app.post("/post", async (req, res, next) => {
             try {
                 const body: any = req.body
+                let user = body.user
+                let existingUser = await User.findById(user)
 
+                if(!existingUser){
+                    console.log("No such user")
+                    return res.send({
+                        error: true,
+                        response:"No user found on this id"
+                    })
+                }
                 let postData = new Post({
                     caption: body?.caption || " ",
                     image: body.image,
-                    postId: uuidv4(),
                     user: body.user
                 })
 
-                await postData.save()
-
+                const session  = await mongoose.startSession()
+                session.startTransaction()
+                await postData.save({session})
+                existingUser.blogs.push(postData)
+                await existingUser.save({session})
+                await session.commitTransaction()
                 console.log("post", postData)
 
                 res.status(201)
@@ -67,7 +81,7 @@ export class PostServices {
             try {
                 const postId: any = req.params.id
                 console.log("id", postId)
-                let isPostExist = await Post.findOne({ postId })
+                let isPostExist = await Post.findById(postId)
                 console.log('post', isPostExist)
 
                 if (!isPostExist) {
@@ -98,7 +112,7 @@ export class PostServices {
                 const postId = req.params.id
                 const caption = req.body?.caption || " "
 
-                let isPostExist = await Post.findOne({ postId })
+                let isPostExist = await Post.findById(postId)
                 console.log("post", isPostExist)
 
                 if (!isPostExist) {
@@ -110,11 +124,12 @@ export class PostServices {
                     })
                 }
 
-                await Post.findOneAndUpdate({ postId }, {
+                await Post.findByIdAndUpdate(postId , {
                     caption
                 })
 
-                const updatePost: any = await Post.findOne({ postId })
+                const updatePost: any = await Post.findById(postId)
+                console.log("updated", updatePost)
 
                 res.status(200)
                 return res.send({
@@ -134,7 +149,7 @@ export class PostServices {
             try {
                 const postId = req.params.id
 
-                let isPostExist = await Post.findOne({ postId })
+                let isPostExist = await Post.findById(postId )
                 console.log("post", isPostExist)
 
                 if (!isPostExist) {
@@ -146,8 +161,13 @@ export class PostServices {
                     })
                 }
 
-                const updatePost = await Post.findOneAndDelete({ postId })
+                let user = isPostExist.user
 
+                let deletePost = await Post.findByIdAndDelete(postId)
+                await User.findByIdAndUpdate(user,{
+                    $pull: { blogs: postId}
+                })
+                console.log(deletePost)
                 res.status(200)
                 return res.send({
                     error: false,
