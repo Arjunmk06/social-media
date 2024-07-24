@@ -45,7 +45,8 @@ export class UserService {
                 let user: any = new User({
                     name: body.name,
                     email: body.email,
-                    password: hashedPassword
+                    password: hashedPassword,
+                    blogs:[]
                 })
                 try {
                     await user.save()
@@ -79,7 +80,7 @@ export class UserService {
                 const email = body.email
                 const password = body.password
 
-                let existingUser = await User.findOne({email})
+                let existingUser:any = await User.findOne({email})
                 console.log(existingUser)
 
                 if (!existingUser) {
@@ -115,6 +116,35 @@ export class UserService {
                     response:err
                 })
 
+            }
+        })
+
+        app.get("/user/:id", async(req,res,next)=>{
+            try{
+                let id = req.params.id
+                console.log("id", id)
+                let existingUser = await User.findById(id)
+                if(!existingUser){
+                    console.log("No such user for given Id")
+                    res.status(404)
+                    return res.send({
+                        error: true,
+                        response: "No such user for given Id"
+                    })
+                }
+
+                console.log("user", existingUser)
+                res.status(200)
+                return res.send({
+                    error: false,
+                    response: existingUser
+                })
+            }catch(err){
+                console.log("error while fetching user", err)
+                return res.send({
+                    error: true,
+                    response: err
+                })
             }
         })
     }

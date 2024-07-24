@@ -17,7 +17,10 @@ const userSchema = new Schema({
         type: String,
         required: true,
         minilenght: 6
-    }
+    },
+    blogs: [{
+        type: mongoose.Types.ObjectId, ref: "Post", required:true
+    }]
 })
 
 export default mongoose.model("User", userSchema)
